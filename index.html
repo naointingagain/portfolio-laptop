@@ -451,9 +451,40 @@
   @keyframes hintArrow{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
   #intro.opening .intro-hint,#intro.zooming .intro-hint{opacity:0}
   @media (prefers-reduced-motion: reduce){ .lap-flip{transition:transform .2s ease} .laptop-wrap{transition:transform .2s ease} .lap-face-screen{transition:none} .screen-on,.screen-off{transition:opacity .2s ease} .intro-hint,.intro-hint .hint-arrow{animation:none} .intro-zoom{transition:transform .2s ease} #intro.opening .intro-sparkle{animation:none} .prop-wrap{transition:none} }
+  /* ============ MOBILE NOTICE — "Best viewed on a desktop" ============
+     Only ever shown on small screens: the overlay is display:none by
+     default and only becomes visible inside the max-width media query
+     below, so desktop visitors never see it. Dismissing it adds the
+     .dismissed class, which hides it again for the rest of the visit. */
+  .mobile-notice{display:none}
+  @media(max-width:768px){
+    .mobile-notice{position:fixed;inset:0;z-index:4000;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(46,22,33,.48)}
+    .mobile-notice.dismissed{display:none}
+    .mobile-notice-card{position:relative;width:100%;max-width:340px;background:var(--paper);border:1px solid #f3b8cb;border-radius:16px;box-shadow:0 20px 48px rgba(120,25,60,.28),0 4px 14px rgba(0,0,0,.14);padding:28px 24px 24px;text-align:center}
+    .mobile-notice-icon{width:56px;height:56px;margin:0 auto 14px;border-radius:50%;background:#fdeef3;display:grid;place-items:center;color:var(--pink)}
+    .mobile-notice-card h2{margin:0 0 8px;font-family:"Playfair Display",serif;font-style:italic;font-weight:600;font-size:24px;line-height:1.2;color:#17171c}
+    .mobile-notice-card p{margin:0 0 20px;font-size:14px;line-height:1.55;color:var(--muted)}
+    .mobile-notice-btn{display:block;width:100%;background:var(--pink);color:#fff;border:none;border-radius:999px;padding:11px 18px;font-size:14px;font-weight:700;min-height:44px}
+    .mobile-notice-btn:hover{background:#c93a6b}
+    .mobile-notice-btn:focus-visible{outline:2px solid var(--pink);outline-offset:2px}
+    .mobile-notice-x{position:absolute;top:10px;right:10px;width:36px;height:36px;min-height:36px;border:none;border-radius:50%;background:transparent;color:#8a8a94;display:grid;place-items:center;padding:0}
+    .mobile-notice-x:hover{background:#fdeef3;color:var(--pink)}
+    .mobile-notice-x:focus-visible{outline:2px solid var(--pink);outline-offset:1px}
+  }
 </style>
 </head>
 <body>
+<!-- MOBILE NOTICE — shown only on small screens (see the .mobile-notice
+     styles above); desktop visitors never see this. -->
+<div class="mobile-notice" id="mobileNotice" role="dialog" aria-modal="true" aria-labelledby="mobileNoticeTitle">
+  <div class="mobile-notice-card">
+    <button class="mobile-notice-x" id="mobileNoticeClose" type="button" aria-label="Close this message"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></button>
+    <div class="mobile-notice-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="30" height="30" fill="none" aria-hidden="true" focusable="false"><rect x="3" y="4.5" width="18" height="12" rx="1.8" stroke="currentColor" stroke-width="1.8"/><path d="M9.5 20.5h5M12 16.5v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div>
+    <h2 id="mobileNoticeTitle">Best viewed on a desktop</h2>
+    <p>This portfolio is designed like a little desktop, so it looks its best on a bigger screen — but you&rsquo;re very welcome to have a look around here too!</p>
+    <button class="mobile-notice-btn" id="mobileNoticeBtn" type="button">Continue anyway</button>
+  </div>
+</div>
 <!-- OPENING INTRO — top-down view of a work desk. A closed rectangular
      laptop sits in the middle of the desk next to a cup of latte;
      click it and the lid opens from the front — front edge lifting up
@@ -1407,6 +1438,25 @@ if(heroLetters.length && !reduceMotion){
   }
   if(laptopBtn) laptopBtn.addEventListener('click', openLaptop);
   if(powerBtn) powerBtn.addEventListener('click', powerOff);
+})();
+</script>
+<script>
+/* Mobile notice — dismiss only. The popup itself is shown purely by
+   the max-width:768px CSS above, so it can never appear on desktop;
+   this just wires up the close (×) button, the "Continue anyway"
+   button and the Escape key. Nothing is stored — it is per-visit
+   in-memory UI state only. */
+(function(){
+  var notice = document.getElementById('mobileNotice');
+  if(!notice) return;
+  function dismiss(){ notice.classList.add('dismissed'); }
+  var btn = document.getElementById('mobileNoticeBtn');
+  var close = document.getElementById('mobileNoticeClose');
+  if(btn) btn.addEventListener('click', dismiss);
+  if(close) close.addEventListener('click', dismiss);
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape' && !notice.classList.contains('dismissed')) dismiss();
+  });
 })();
 </script>
 </body>

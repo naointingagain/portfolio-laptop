@@ -226,6 +226,33 @@
   .media-slot.filled img,
   .media-slot.bw-photo img,
   .media-slot.talent-cal img{cursor:pointer}
+  /* Every element INSIDE a clickable work card shows the hand too —
+     thumbnails, badges, titles, excerpts and captions — so there is
+     no spot on a clickable card where the normal arrow comes back.
+     The one surface CSS alone cannot reach is a cross-origin iframe
+     (a LinkedIn post or Canva design): the iframe paints its own
+     cursor, so the tile's cursor:pointer never applies while the
+     pointer is over the iframe itself. Those tiles are covered by
+     the transparent .li-guard overlay (see the guard rules below),
+     which belongs to this page and does show the hand — the guard
+     script at the end of the body now covers Canva embeds and every
+     LinkedIn embed, so every embed tile gets that overlay. */
+  .media-slot.filled *,
+  .media-slot.bw-embed *,
+  .media-slot.bw-photo *,
+  .media-slot.ncs-embed *,
+  .media-slot.talent-embed *,
+  .media-slot.talent-cal *,
+  .bw-media-item:has(> .media-slot.filled) *,
+  .bw-media-item:has(> .media-slot.bw-embed) *,
+  .bw-media-item:has(> .media-slot.bw-photo) *,
+  .ncs-media-item:has(> .media-slot.ncs-embed) *,
+  .talent-media-item:has(> .media-slot.talent-embed) *,
+  .talent-media-item:has(> .media-slot.talent-cal) *,
+  .winbody a.talent-blog-card *,
+  .winbody a.scoga-article-card *,
+  .talent-google-card *,
+  .media-slot iframe{cursor:pointer}
   /* BW Group prototype — 'My work' split sections: heading left, text right */
   .bw-section{display:grid;grid-template-columns:minmax(142.5px,228px) 1fr;gap:10.26px 34.2px;padding:22.23px 0;border-top:0.86px solid #e9e2e4;align-items:start}
   .bw-section:last-child{border-bottom:0.86px solid #e9e2e4}
@@ -264,12 +291,16 @@
   .media-slot.ncs-embed{padding:0;border-style:solid;border-color:rgba(0,0,0,.08);background:#fff;display:block;aspect-ratio:1/1}
   .media-slot.ncs-embed iframe{width:100%;height:100%;display:block;border:0;background:#fff}
   .ncs-caption{margin:6.84px 1.9px 0;font-size:10.45px;line-height:1.45;font-style:italic;color:#222}
-  /* LinkedIn embeds — scroll guard (33 Talent, NCS, BW Group): by default a
-     transparent guard covers each LinkedIn iframe and the iframe itself has
-     pointer-events:none, so wheel / touch scrolling rolls the portfolio
-     window straight past the embed instead of getting trapped inside the
-     LinkedIn post. Tapping / clicking the guard removes it and the embed
-     becomes fully interactive. Same idea as the NCS TikTok tap-to-play. */
+  /* Embed scroll guard (33 Talent, NCS, BW Group): by default a
+     transparent guard covers each LinkedIn or Canva iframe and the
+     iframe itself has pointer-events:none, so wheel / touch scrolling
+     rolls the portfolio window straight past the embed instead of
+     getting trapped inside it. Tapping / clicking the guard removes
+     it and the embed becomes fully interactive. Same idea as the NCS
+     TikTok tap-to-play. The guard is also what shows the hand cursor
+     over an embed tile: an iframe paints its own cursor, so the
+     tile's cursor:pointer cannot reach inside it, but the guard is
+     part of this page and carries cursor:pointer itself. */
   .media-slot.li-locked{position:relative}
   .media-slot.li-locked iframe{pointer-events:none}
   .li-guard{position:absolute;inset:0;z-index:3;width:100%;height:100%;margin:0;padding:0;background:transparent;border:0;cursor:pointer;font:inherit;-webkit-appearance:none;appearance:none}
@@ -1421,26 +1452,31 @@ document.querySelectorAll('.ncs-tiktok').forEach(function(btn){
     btn.replaceWith(wrap);
   });
 });
-/* LinkedIn embeds — scroll guard. Every LinkedIn iframe on the 33 Talent,
-   NCS and BW Group pages starts locked: its slot gets .li-locked (iframe
-   pointer-events:none via CSS) plus a transparent guard button on top with
-   a "Tap to interact" hint, so page scrolling passes straight over the
-   embed. Clicking / tapping the guard unlocks that one embed and removes
-   the guard, making the LinkedIn post itself scrollable and clickable.
-   Canva embeds and the click-to-load TikToks are not touched. */
+/* Embed scroll guard — LinkedIn AND Canva. Every embed iframe on the
+   33 Talent, NCS and BW Group pages starts locked: its slot gets
+   .li-locked (iframe pointer-events:none via CSS) plus a transparent
+   guard button on top with a "Tap to interact" hint, so page scrolling
+   passes straight over the embed. Clicking / tapping the guard unlocks
+   that one embed and removes the guard, making the embed itself
+   scrollable and clickable. The guard also fixes the hover cursor
+   over embed tiles: a cross-origin iframe paints its own (arrow)
+   cursor, so cursor:pointer on the tile can never show while the
+   pointer is over the iframe — the guard sits on top of the iframe,
+   belongs to this page, and shows the hand. That is why Canva embeds
+   and the IWD 2023 LinkedIn post are guarded too: unguarded, they
+   were the tiles that kept showing the normal arrow on hover. The
+   click-to-load TikToks are not touched (they are buttons already). */
 document.querySelectorAll('.talent-embed iframe, .ncs-embed iframe, .bw-embed iframe').forEach(function(f){
   var src = f.getAttribute('src') || '';
-  if(src.indexOf('linkedin.com') === -1) return;
-  /* The IWD 2023 post (marked data-no-guard) is not scrollable, so it
-     keeps no guard: its embed stays directly usable. */
-  if(f.hasAttribute('data-no-guard')) return;
+  var isCanva = src.indexOf('canva.com') !== -1;
+  if(!isCanva && src.indexOf('linkedin.com') === -1) return;
   var slot = f.parentNode;
   if(!slot || slot.querySelector('.li-guard')) return;
   slot.classList.add('li-locked');
   var guard = document.createElement('button');
   guard.type = 'button';
   guard.className = 'li-guard';
-  guard.setAttribute('aria-label', 'Tap to interact with this LinkedIn post');
+  guard.setAttribute('aria-label', isCanva ? 'Tap to interact with this design' : 'Tap to interact with this LinkedIn post');
   var hint = document.createElement('span');
   hint.className = 'li-tap';
   hint.setAttribute('aria-hidden', 'true');
@@ -1793,6 +1829,16 @@ if(heroLetters.length && !reduceMotion){
       if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); activate(); }
     });
   });
+  /* Fallback: a delegated listener too, so a click on a Google card
+     still pops its image up even if that card's own listener was
+     somehow missed. If both fire for one click, open() simply sets
+     the same image twice — no visible difference. */
+  document.addEventListener('click', function(e){
+    var card = e.target && e.target.closest ? e.target.closest('.talent-google-card') : null;
+    if(!card) return;
+    var cardImg = card.querySelector('.talent-google-img');
+    if(cardImg) open(cardImg.getAttribute('src'), cardImg.getAttribute('alt'), card);
+  });
   if(closeBtn) closeBtn.addEventListener('click', close);
   box.addEventListener('click', function(e){ if(e.target === box) close(); });
   document.addEventListener('keydown', function(e){
@@ -1803,9 +1849,12 @@ if(heroLetters.length && !reduceMotion){
 <script>
 /* BW Group — World Horizon hover preview: hovering the magazine
    credits tile on the BW Group page (desktop, fine pointer) pops up
-   an enlarged preview of the credits column; moving the pointer away
-   from both the tile and the popup closes it, and clicking through
-   opens the full magazine PDF. On touch devices the first tap on the
+   an enlarged preview of the credits column; the popup tracks the
+   hover dynamically and closes IMMEDIATELY when the pointer leaves
+   — there is no hide timer or lingering delay. It stays open only
+   while the pointer is on the tile or moving directly into the
+   popup itself (so its PDF button stays reachable), and clicking
+   through opens the full magazine PDF. On touch devices the first tap on the
    tile shows the popup instead of navigating — the popup's "Read the
    full magazine (PDF)" button is the way through, and it closes via
    its × button, tapping anywhere outside it, or Escape. The popup is
@@ -1820,7 +1869,6 @@ if(heroLetters.length && !reduceMotion){
   document.body.appendChild(pop);
   var closeBtn = document.getElementById('whPopClose');
   var fine = window.matchMedia('(hover: hover) and (pointer: fine)');
-  var hideTimer = null;
   var isOpen = false;
   function place(){
     var r = tile.getBoundingClientRect();
@@ -1834,7 +1882,6 @@ if(heroLetters.length && !reduceMotion){
     pop.style.top = top + 'px';
   }
   function open(){
-    if(hideTimer){ clearTimeout(hideTimer); hideTimer = null; }
     if(!isOpen){
       pop.classList.add('open');
       pop.setAttribute('aria-hidden','false');
@@ -1843,25 +1890,28 @@ if(heroLetters.length && !reduceMotion){
     place();
   }
   function close(){
-    if(hideTimer){ clearTimeout(hideTimer); hideTimer = null; }
     if(!isOpen) return;
     pop.classList.remove('open');
     pop.setAttribute('aria-hidden','true');
     isOpen = false;
   }
-  function scheduleClose(){
-    if(hideTimer) clearTimeout(hideTimer);
-    hideTimer = setTimeout(close, 220);
+  /* Instant, dynamic hide: leaving the tile (or the popup) closes the
+     popup in the same event — no setTimeout, no grace period. The
+     only exception is moving directly between the tile and the popup
+     itself (relatedTarget inside the other one), so the popup's own
+     "Read the full magazine" button stays reachable; moving anywhere
+     else closes it right away. */
+  function leave(e){
+    var to = e.relatedTarget;
+    if(to && (item.contains(to) || pop.contains(to))) return;
+    close();
   }
   /* Desktop: hover or keyboard focus pops the preview up. */
   item.addEventListener('mouseenter', function(){ if(fine.matches) open(); });
-  item.addEventListener('mouseleave', function(){ if(fine.matches) scheduleClose(); });
-  pop.addEventListener('mouseenter', function(){
-    if(fine.matches && hideTimer){ clearTimeout(hideTimer); hideTimer = null; }
-  });
-  pop.addEventListener('mouseleave', function(){ if(fine.matches) scheduleClose(); });
+  item.addEventListener('mouseleave', function(e){ if(fine.matches) leave(e); });
+  pop.addEventListener('mouseleave', function(e){ if(fine.matches) leave(e); });
   tile.addEventListener('focus', function(){ if(fine.matches) open(); });
-  tile.addEventListener('blur', function(){ if(fine.matches) scheduleClose(); });
+  tile.addEventListener('blur', function(){ if(fine.matches) close(); });
   /* Touch / coarse pointers: first tap shows the popup instead of
      following the link; a second tap on the tile closes it again. */
   tile.addEventListener('click', function(e){
